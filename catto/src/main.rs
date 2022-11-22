@@ -1,7 +1,9 @@
 extern crate core;
 
 use std::f32::consts::*;
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+};
 
 fn main() {
     App::new()
@@ -10,29 +12,23 @@ fn main() {
             brightness: 1.0 / 5.0f32,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(CattoRotatto)
+        .add_startup_system(setup)
+        .add_system(animate_light_direction)
         .run();
 }
 
-pub struct CattoRotatto;
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    meshes: Res<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let catto_handle = asset_server.load("models/catto.gltf#Mesh0/Primitive0");
 
-impl Plugin for CattoRotatto {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(catto);
-    }
-}
-
-fn catto(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("models/catto.gltf"),
-        ..default()
-    });
-    
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.7, 0.7, 1.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
+        transform: Transform::from_xyz(2.0, 2.0, 0.9).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..default()
     });
-    
     const HALF_SIZE: f32 = 1.0;
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
@@ -50,5 +46,23 @@ fn catto(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         ..default()
     });
+    commands.spawn(SceneBundle {
+        scene: asset_server.load("models/catto.gltf#Scene0"),
+        ..default()
+    });
+}
+
+fn animate_light_direction(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<DirectionalLight>>,
+) {
+    for mut transform in &mut query {
+        transform.rotation = Quat::from_euler(
+            EulerRot::ZYX,
+            0.0,
+            time.elapsed_seconds() * PI / 5.0,
+            -FRAC_PI_4,
+        );
+    }
 }
 
